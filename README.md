@@ -357,3 +357,154 @@ PRETTY_TABLE_OUTPUT - регулировка вывода, параметр True
 Результат выполнения:
 
 ![Результат выполнения задания 2](images/lab03/text_stats.png)
+
+
+
+# Лабораторная работа 4
+### Задание 1:
+
+```python
+from pathlib import Path
+import csv
+from typing import Iterable, Sequence
+
+
+def ensure_parent_dir(path: str | Path) -> None:
+    p = Path(path)
+    parent = p.parent
+    if parent and not parent.exists():
+        parent.mkdir(parents=True, exist_ok=True)
+
+def read_text(path: str | Path, encoding: str = "utf-8") -> str:
+    p = Path(path)
+    return p.read_text(encoding=encoding)
+
+
+def write_csv(
+        rows: Iterable[Sequence],
+        path: str | Path,
+        header: tuple[str, ...] | None = None
+) -> None:
+    rows = list(rows)
+
+    if rows:
+        length = len(rows[0])
+        for r in rows:
+            if len(r) != length:
+                raise ValueError("Все строки CSV должны быть одинаковой длины")
+
+    ensure_parent_dir(path)
+
+    p = Path(path)
+    with p.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if header:
+            writer.writerow(header)
+        for r in rows:
+            writer.writerow(r)
+```
+
+
+### Задание 2:
+
+```python
+import sys
+import argparse
+from pathlib import Path
+
+from lab04.io_txt_csv import read_text, write_csv
+from lib.text import normalize, tokenize, count_freq, top_n
+
+
+
+
+def process_file(path: Path, encoding: str):
+    text = read_text(path, encoding=encoding)
+    norm = normalize(text, casefold=True, yo2e=True)
+    tokens = tokenize(norm)
+    return tokens
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="ЛР4 — генерация отчёта по частотам слов"
+    )
+
+    parser.add_argument("--in", dest="inputs", nargs="+", default=["data/lab04/input.txt"],
+                        help="Входные файлы")
+    parser.add_argument("--out", dest="out", default="data/lab04/report.csv",
+                        help="Выходной CSV отчёт")
+    parser.add_argument("--encoding", default="utf-8", help="Кодировка входных файлов")
+
+    parser.add_argument("--per-file", dest="per_file", default=None,
+                        help="CSV отчёт по каждому файлу отдельно (file, word, count)")
+    parser.add_argument("--total", dest="total", default=None,
+                        help="CSV общий отчёт по всем файлам вместе")
+
+    args = parser.parse_args()
+
+    inputs = [Path(p) for p in args.inputs]
+
+    if len(inputs) == 1 and args.per_file is None and args.total is None:
+        tokens = process_file(inputs[0], args.encoding)
+
+        if not tokens:
+            write_csv([], args.out, header=("word", "count"))
+            print("Всего слов: 0")
+            print("Уникальных слов: 0")
+            print("Топ-5:")
+            return
+
+        freq = count_freq(tokens)
+        sorted_items = sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))
+
+        write_csv(sorted_items, args.out, header=("word", "count"))
+
+        print(f"Всего слов: {len(tokens)}")
+        print(f"Уникальных слов: {len(freq)}")
+
+        top5 = top_n(freq, 5)
+        print("Топ-5:")
+        for w, c in top5:
+            print(f"{w}:{c}")
+
+        return
+
+    all_tokens = []
+    per_file_rows = []
+
+    for p in inputs:
+        tokens = process_file(p, args.encoding)
+        all_tokens.extend(tokens)
+
+        freq = count_freq(tokens)
+        sorted_items = sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))
+
+        for w, c in sorted_items:
+            per_file_rows.append((p.name, w, c))
+
+    if args.per_file:
+        write_csv(per_file_rows, args.per_file, header=("file", "word", "count"))
+
+    if args.total:
+        freq_total = count_freq(all_tokens)
+        sorted_total = sorted(freq_total.items(), key=lambda kv: (-kv[1], kv[0]))
+        write_csv(sorted_total, args.total, header=("word", "count"))
+
+if __name__ == "__main__":
+    main()
+```
+### Комментарии к выполнению:
+
+```
+Используются функции из ЛР3 (normalize, tokenize, count_freq, top_n) для обработки текста.
+io_txt_csv.py содержит функции для чтения текстовых файлов и записи CSV (read_text, write_csv).
+text_report.py читает один входной файл (input.txt), подсчитывает частоты слов, сортирует их и сохраняет отчёт report.csv.
+Пустой файл → создаётся CSV только с заголовком.
+Кодировка по умолчанию UTF-8, можно изменить через параметр --encoding.
+Консольный вывод показывает общее количество слов, уникальных слов и топ-5 слов.
+```
+
+Результат выполнения:
+
+![Результат выполнения задания 2](images/lab04/text_report.png)

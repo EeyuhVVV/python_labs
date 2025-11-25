@@ -3,7 +3,9 @@ import argparse
 from pathlib import Path
 
 from lab04.io_txt_csv import read_text, write_csv
-from lab03.text import normalize, tokenize, count_freq, top_n
+from lib.text import normalize, tokenize, count_freq, top_n
+
+
 
 
 def process_file(path: Path, encoding: str):
