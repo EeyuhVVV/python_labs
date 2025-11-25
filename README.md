@@ -508,3 +508,4 @@ text_report.py читает один входной файл (input.txt), под
 Результат выполнения:
 
 ![Результат выполнения задания 2](images/lab04/text_report.png)
+![report_csv.png](images/lab04/report_csv.png)
