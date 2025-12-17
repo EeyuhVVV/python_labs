@@ -1103,8 +1103,8 @@ class Group:
 
 Результат выполнения:
 
-![Результат выполнения заданий](images/lab09/group1.png)
-
+![Результат выполнения заданий]![group.png](images/lab09/group.png)
+![group2.png](images/lab09/group2.png)
 
 # Лабораторная работа 10
 ### structures.py:
